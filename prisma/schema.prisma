@@ -1,0 +1,96 @@
+// Prisma schema para o FinanceHub API
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  avatar       String?
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  goals        Goal[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  name         String
+  type         String        // 'checking' | 'credit_card' | 'investment' | 'cash'
+  balance      Float         @default(0)
+  institution  String
+  color        String
+  creditLimit  Float?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("accounts")
+}
+
+model Category {
+  id            String        @id @default(uuid())
+  name          String
+  color         String
+  icon          String
+  type          String        // 'income' | 'expense'
+  monthlyBudget Float?
+  userId        String?       // Se nulo, categoria padrão do sistema
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@map("categories")
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  description   String
+  amount        Float
+  type          String   // 'income' | 'expense' | 'transfer'
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  date          String   // YYYY-MM-DD
+  status        String   @default("completed") // 'completed' | 'pending'
+  paymentMethod String   @default("pix") // 'credit_card' | 'debit' | 'pix' | 'bank_slip' | 'cash'
+  notes         String?
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("transactions")
+}
+
+model Goal {
+  id            String   @id @default(uuid())
+  title         String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  deadline      String   // YYYY-MM-DD
+  category      String
+  color         String
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("goals")
+}
