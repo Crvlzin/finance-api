@@ -75,7 +75,16 @@ export function buildApp() {
   // Global Error Handler
   app.setErrorHandler(errorHandler)
 
-  // Health check
+  // Health checks e rotas de status
+  app.get('/', async () => {
+    return { status: 'ok', name: 'FinanceHub API', timestamp: new Date().toISOString() }
+  })
+  app.get('/api', async () => {
+    return { status: 'ok', name: 'FinanceHub API', timestamp: new Date().toISOString() }
+  })
+  app.get('/health', async () => {
+    return { status: 'ok', timestamp: new Date().toISOString() }
+  })
   app.get('/api/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() }
   })
