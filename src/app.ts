@@ -38,39 +38,41 @@ export function buildApp() {
     },
   })
 
-  // Swagger Documentation
-  app.register(swagger, {
-    openapi: {
-      info: {
-        title: 'FinanceHub API',
-        description: 'Documentação da API REST do FinanceHub',
-        version: '1.0.0',
-      },
-      servers: [
-        {
-          url: `http://localhost:${env.PORT}`,
-          description: 'Servidor Local',
+  // Swagger Documentation (habilitado localmente fora da Vercel)
+  if (!process.env.VERCEL) {
+    app.register(swagger, {
+      openapi: {
+        info: {
+          title: 'FinanceHub API',
+          description: 'Documentação da API REST do FinanceHub',
+          version: '1.0.0',
         },
-      ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
+        servers: [
+          {
+            url: `http://localhost:${env.PORT}`,
+            description: 'Servidor Local',
+          },
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+            },
           },
         },
       },
-    },
-  })
+    })
 
-  app.register(swaggerUi, {
-    routePrefix: '/docs',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking: false,
-    },
-  })
+    app.register(swaggerUi, {
+      routePrefix: '/docs',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: false,
+      },
+    })
+  }
 
   // Global Error Handler
   app.setErrorHandler(errorHandler)
