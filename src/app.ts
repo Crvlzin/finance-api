@@ -2,8 +2,6 @@ import fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
-import swagger from '@fastify/swagger'
-import swaggerUi from '@fastify/swagger-ui'
 import { env } from './env.js'
 import { errorHandler } from './middlewares/error-handler.js'
 import { authRoutes } from './routes/auth.routes.js'
@@ -31,46 +29,55 @@ export function buildApp() {
     secret: env.JWT_SECRET,
   })
 
-  // Multipart para upload de arquivos CSV
+  // Multipart para upload de extratos CSV
   app.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB
     },
   })
 
-  // Swagger Documentation (habilitado localmente fora da Vercel)
+  // Swagger Documentation (carregado dinamicamente fora da Vercel para compatibilidade ESM)
   if (!process.env.VERCEL) {
-    app.register(swagger, {
-      openapi: {
-        info: {
-          title: 'FinanceHub API',
-          description: 'Documentação da API REST do FinanceHub',
-          version: '1.0.0',
-        },
-        servers: [
-          {
-            url: `http://localhost:${env.PORT}`,
-            description: 'Servidor Local',
-          },
-        ],
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type: 'http',
-              scheme: 'bearer',
-              bearerFormat: 'JWT',
+    app.register(async (instance) => {
+      try {
+        const swagger = (await import('@fastify/swagger')).default
+        const swaggerUi = (await import('@fastify/swagger-ui')).default
+
+        await instance.register(swagger, {
+          openapi: {
+            info: {
+              title: 'FinanceHub API',
+              description: 'Documentação da API REST do FinanceHub',
+              version: '1.0.0',
+            },
+            servers: [
+              {
+                url: `http://localhost:${env.PORT}`,
+                description: 'Servidor Local',
+              },
+            ],
+            components: {
+              securitySchemes: {
+                bearerAuth: {
+                  type: 'http',
+                  scheme: 'bearer',
+                  bearerFormat: 'JWT',
+                },
+              },
             },
           },
-        },
-      },
-    })
+        })
 
-    app.register(swaggerUi, {
-      routePrefix: '/docs',
-      uiConfig: {
-        docExpansion: 'list',
-        deepLinking: false,
-      },
+        await instance.register(swaggerUi, {
+          routePrefix: '/docs',
+          uiConfig: {
+            docExpansion: 'list',
+            deepLinking: false,
+          },
+        })
+      } catch (e: any) {
+        instance.log.warn(`Swagger UI não pôde ser carregado: ${e?.message}`)
+      }
     })
   }
 
@@ -100,7 +107,7 @@ export function buildApp() {
   app.register(analyticsRoutes, { prefix: '/api/analytics' })
   app.register(csvRoutes, { prefix: '/api/csv' })
 
-  // Compatibilidade com ANALYTICS_BASE_URL (http://localhost:8000/api ou direto)
+  // Compatibilidade com chamadas diretas /csv/parse
   app.register(csvRoutes, { prefix: '/csv' })
 
   return app
